@@ -71,24 +71,25 @@ public class CachedInvocationHandler implements InvocationHandler {
         List<Object> key = new ArrayList<>();
         key.add(method);
         key.addAll(asList(args));
+
         return key;
     }
 
     private Object inMemoryProcess(Method method, Object[] args) throws Throwable {
+        Object[] identityArgs = getIdentityArguments(method, args);
         if (!inMemoryStorage.containsKey(key(method, args))) {
-            System.out.println("Delegation of " + method.getName());
             Object result = invoke(method, args);
-            inMemoryStorage.put(key(method, args), result);
+            inMemoryStorage.put(key(method, identityArgs), result);
         }
-        return inMemoryStorage.get(key(method, args));
 
+        return inMemoryStorage.get(key(method, args));
     }
 
     private Object fileProcess(Method method, Object[] args) throws Throwable {
-        String fileName = generateFileName(method, args);
+        Object[] identityArguments = getIdentityArguments(method, args);
+        String fileName = generateFileName(method, identityArguments);
         Object result = null;
         if (!new File(fileName).exists()) {
-            System.out.println("File has been created");
             try {
                 result = invoke(method, args);
                 System.out.println("result: " + result);
@@ -97,7 +98,6 @@ public class CachedInvocationHandler implements InvocationHandler {
                 throw new RuntimeException("Exception happened while working with file " + fileName, e);
             }
         } else {
-            System.out.println("File exists");
             try {
                 Result myResult = SerializationUtils.deserialize(fileName);
                 result = myResult.getResult();
@@ -126,5 +126,27 @@ public class CachedInvocationHandler implements InvocationHandler {
         fileName = fileName.substring(0, fileName.lastIndexOf("_"));
 
         return rootPath + fileName;
+    }
+
+    private Object[] getIdentityArguments(Method method, Object[] args) {
+        Cache cache = method.getAnnotation(Cache.class);
+        Class<?>[] classesFromCache = cache.identityBy();
+        if (classesFromCache.length == 0 || classesFromCache.length == args.length)
+            return args;
+
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        List<Object> resultArgs = new ArrayList<>();
+
+        for (int i = 0; i < parameterTypes.length; i++) {
+            Class<?> clazz = parameterTypes[i];
+            for (int j = 0; j < classesFromCache.length; j++) {
+                if (parameterTypes[i].equals(classesFromCache[j])) {
+                    resultArgs.add(args[i]);
+                    classesFromCache[j] = null;
+                }
+            }
+        }
+
+        return resultArgs.toArray();
     }
 }
