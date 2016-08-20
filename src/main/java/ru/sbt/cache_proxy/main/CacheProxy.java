@@ -15,6 +15,6 @@ public class CacheProxy {
     }
 
     public <T> T cache(Object delegate) {
-        return (T) new CachedInvocationHandler(delegate).cache(delegate);
+        return (T) new CachedInvocationHandler(delegate, rootPath).cache(delegate);
     }
 }

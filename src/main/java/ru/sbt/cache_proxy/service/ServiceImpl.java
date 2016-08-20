@@ -13,10 +13,13 @@ public class ServiceImpl implements Service {
     public List<String> run(String item, double value, Date date) {
         System.out.println("Running with value = " + value);
         List<String> list = new ArrayList<>();
+        list.add("one");
+        list.add("two");
 
-        for (int i = 12; i < 1_000_000_000; i++) {
-            list.add(item);
-            value += i / (i - 1);
+        try {
+            Thread.sleep(2500);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
 
         return list;

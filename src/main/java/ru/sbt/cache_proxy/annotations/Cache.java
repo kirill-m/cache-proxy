@@ -19,13 +19,13 @@ public @interface Cache {
 //        IN_MEMORY
 //    }
 
-    public CacheType cacheType() default CacheType.IN_MEMORY;
+    CacheType cacheType() default CacheType.IN_MEMORY;
 
     String fileNamePrefix() default "default";
 
     boolean zip() default false;
 
-    Class[] identityBy() default {String.class, double.class};
+    Class[] identityBy() default {};
 
     double listItemsAmountToCache() default 10;
 }
