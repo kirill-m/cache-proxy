@@ -2,7 +2,6 @@ package ru.sbt.cache_proxy.service;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -15,6 +14,9 @@ public class ServiceImpl implements Service {
         List<String> list = new ArrayList<>();
         list.add("one");
         list.add("two");
+        list.add("three");
+        list.add("four");
+        list.add("five");
 
         try {
             Thread.sleep(2500);
@@ -27,7 +29,12 @@ public class ServiceImpl implements Service {
 
     @Override
     public List<String> work(String item) {
-        System.out.println("Working with item = " + item);
-        return  new LinkedList<>(); //run(item, 0, new Date());
+        List<String> list = new ArrayList<>();
+        list.add(item + " one");
+        list.add(item + "two");
+        list.add(item + "three");
+        list.add(item + "four");
+        list.add(item + "five");
+        return list; //run(item, 0, new Date());
     }
 }

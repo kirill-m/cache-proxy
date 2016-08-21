@@ -7,14 +7,14 @@ import ru.sbt.cache_proxy.serialization.SerializationUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import static java.lang.ClassLoader.getSystemClassLoader;
 import static java.util.Arrays.asList;
@@ -48,14 +48,13 @@ public class CachedInvocationHandler implements InvocationHandler {
         Object result = null;
         if (cache != null) {
             if (cache.cacheType().equals(CacheType.IN_MEMORY))
-                result =  inMemoryProcess(method, args);
+                result = inMemoryProcess(method, args);
             else if (cache.cacheType().equals(CacheType.FILE))
-                result =  fileProcess(method, args);
+                result = fileProcess(method, args);
         }
 
         return result;
     }
-
 
     private Object invoke(Method method, Object[] args) throws Throwable {
         try {
@@ -79,6 +78,7 @@ public class CachedInvocationHandler implements InvocationHandler {
         Object[] identityArgs = getIdentityArguments(method, args);
         if (!inMemoryStorage.containsKey(key(method, args))) {
             Object result = invoke(method, args);
+            result = checkItemsAmountToCache(method, result);
             inMemoryStorage.put(key(method, identityArgs), result);
         }
 
@@ -89,19 +89,19 @@ public class CachedInvocationHandler implements InvocationHandler {
         Object[] identityArguments = getIdentityArguments(method, args);
         String fileName = generateFileName(method, identityArguments);
         Object result = null;
-        if (!new File(fileName).exists()) {
+        String zipFileName = fileName.substring(0, fileName.lastIndexOf(".")) + ".zip";
+        if (!new File(fileName).exists() && !new File(zipFileName).exists()) {
             try {
-                result = invoke(method, args);
-                System.out.println("result: " + result);
-                SerializationUtils.serialize(new Result(result), fileName);
+                serialize(method, args);
             } catch (IOException e) {
                 throw new RuntimeException("Exception happened while working with file " + fileName, e);
             }
         } else {
             try {
-                Result myResult = SerializationUtils.deserialize(fileName);
-                result = myResult.getResult();
-                System.out.println("Result: " + myResult.getResult());
+//                Result myResult = SerializationUtils.deserialize(fileName);
+//                result = myResult.getResult();
+//                System.out.println("Result: " + myResult.getResult());
+                result = deserialize(method, args);
             } catch (IOException e) {
                 throw new RuntimeException("Exception happened while trying to deserialize file " + fileName, e);
             } catch (ClassNotFoundException e) {
@@ -113,8 +113,11 @@ public class CachedInvocationHandler implements InvocationHandler {
     }
 
     private String generateFileName(Method method, Object[] args) {
-        StringBuilder sb =  new StringBuilder();
-        sb.append(method.getName())
+        String prefix = method.getAnnotation(Cache.class).fileNamePrefix();
+        if ("default".equals(prefix))
+            prefix = method.getName();
+        StringBuilder sb = new StringBuilder();
+        sb.append(prefix)
                 .append("_");
 
         for (Object arg : args) {
@@ -138,7 +141,6 @@ public class CachedInvocationHandler implements InvocationHandler {
         List<Object> resultArgs = new ArrayList<>();
 
         for (int i = 0; i < parameterTypes.length; i++) {
-            Class<?> clazz = parameterTypes[i];
             for (int j = 0; j < classesFromCache.length; j++) {
                 if (parameterTypes[i].equals(classesFromCache[j])) {
                     resultArgs.add(args[i]);
@@ -148,5 +150,71 @@ public class CachedInvocationHandler implements InvocationHandler {
         }
 
         return resultArgs.toArray();
+    }
+
+    private Object checkItemsAmountToCache(Method method, Object value) {
+        if (method.getReturnType().equals(List.class)) {
+            List<Object> result = (List<Object>) value;
+            int toIndex = method.getAnnotation(Cache.class).listItemsAmountToCache();
+            System.out.println("LIST toIndex " + toIndex + " " + result.size());
+            if (toIndex < result.size())
+                result = new ArrayList<>(result.subList(0, toIndex));
+            return result;
+        } else
+            return value;
+    }
+
+    private void serialize(Method method, Object[] args) throws Throwable {
+        Object[] identityArguments = getIdentityArguments(method, args);
+        String fileName = generateFileName(method, identityArguments);
+        Object result = invoke(method, args);
+        result = checkItemsAmountToCache(method, result);
+        System.out.println("result: " + result);
+        SerializationUtils.serialize(new Result(result), fileName);
+
+        if (method.getAnnotation(Cache.class).zip()) {
+            System.out.println("creating ZIP...");
+            SerializationUtils.zipFile(fileName);
+            File serFile = new File(fileName);
+            if (serFile.exists())
+                serFile.delete();
+        }
+    }
+
+    private Object deserialize(Method method, Object[] args) throws IOException, ClassNotFoundException {
+        Object[] identityArguments = getIdentityArguments(method, args);
+        Object result = null;
+        String fileName = generateFileName(method, identityArguments);
+
+        if (!method.getAnnotation(Cache.class).zip()) {
+            Result myResult = SerializationUtils.deserialize(fileName);
+            result = myResult.getResult();
+            System.out.println("Result: " + myResult.getResult());
+        } else {
+            String zipFileName = fileName.substring(0, fileName.lastIndexOf(".")) + ".zip";
+            if (new File(zipFileName).exists()) {
+                ZipFile zipFile = new ZipFile(zipFileName);
+                Enumeration<? extends ZipEntry> entries = zipFile.entries();
+                if (entries.hasMoreElements()) {
+                    ZipEntry zipEntry = entries.nextElement();
+                    InputStream inputStream = zipFile.getInputStream(zipEntry);
+                    List<Integer> buffer = new ArrayList<>();
+                    int tmp = 0;
+
+                    while (inputStream.available() > 0) {
+                        buffer.add(inputStream.read());
+                    }
+                    byte[] bytes = new byte[buffer.size()];
+                    for (int i = 0; i < buffer.size(); i++) {
+                        Integer integer = buffer.get(i);
+                        bytes[i] = (byte)integer.intValue();
+                    }
+                    Result myResult = SerializationUtils.deserialize(bytes);
+                    result = myResult.getResult();
+                }
+            }
+        }
+        System.out.println("result: " + result);
+        return result;
     }
 }

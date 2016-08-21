@@ -27,5 +27,5 @@ public @interface Cache {
 
     Class[] identityBy() default {};
 
-    double listItemsAmountToCache() default 10;
+    int listItemsAmountToCache() default 10_000;
 }

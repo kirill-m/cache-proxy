@@ -3,7 +3,10 @@ package ru.sbt.cache_proxy.serialization;
 /**
  * Created by kirill on 20.08.16
  */
+
 import java.io.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class SerializationUtils {
 
@@ -44,5 +47,30 @@ public class SerializationUtils {
                 new ByteArrayInputStream(bytes))) {
             return (T) stream.readObject();
         }
+    }
+
+    public static void zipFile(String file) {
+        String zipFileName = file.substring(0, file.lastIndexOf(".")) + ".zip";
+        try (FileOutputStream fos = new FileOutputStream(zipFileName);
+             ZipOutputStream zos = new ZipOutputStream(fos);
+             FileInputStream fis = new FileInputStream(new File(file))) {
+            String fileName = file.substring(file.lastIndexOf(System.getProperty("file.separator")) + 1);
+            System.out.println(fileName);
+            ZipEntry e = new ZipEntry(fileName);
+            zos.putNextEntry(e);
+
+            int tmp = 0;
+            while ((tmp = fis.read()) >= 0) {
+                zos.write(tmp);
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("No such file" + zipFileName + "found", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Exception happened on autoclosable resource ZipOutputStream out", e);
+        }
+    }
+
+    public void deleteFile(String file) {
+
     }
 }
