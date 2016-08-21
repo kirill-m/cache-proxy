@@ -6,6 +6,8 @@ import java.util.List;
 
 /**
  * Created by kirill on 19.08.16
+ *
+ * * The class simulates slow operation.
  */
 public class ServiceImpl implements Service {
     @Override

@@ -64,7 +64,6 @@ public class CacheProxyUtils {
         if (method.getReturnType().equals(List.class)) {
             List<Object> result = (List<Object>) value;
             int toIndex = method.getAnnotation(Cache.class).listItemsAmountToCache();
-            System.out.println("LIST toIndex " + toIndex + " " + result.size());
             if (toIndex < result.size())
                 result = new ArrayList<>(result.subList(0, toIndex));
             return result;
@@ -77,11 +76,9 @@ public class CacheProxyUtils {
         String fileName = generateFileName(method, identityArguments, rootPath);
         Object result = invoke(method, args, delegate);
         result = checkItemsAmountToCache(method, result);
-        System.out.println("result: " + result);
         SerializationUtils.serialize(new Result(result), fileName);
 
         if (method.getAnnotation(Cache.class).zip()) {
-            System.out.println("creating ZIP...");
             SerializationUtils.zipFile(fileName);
             File serFile = new File(fileName);
             if (serFile.exists())
@@ -107,7 +104,6 @@ public class CacheProxyUtils {
         if (!method.getAnnotation(Cache.class).zip()) {
             Result myResult = SerializationUtils.deserialize(fileName);
             result = myResult.getResult();
-            System.out.println("Result: " + myResult.getResult());
         } else {
             String zipFileName = fileName.substring(0, fileName.lastIndexOf(".")) + ".zip";
             if (new File(zipFileName).exists()) {
@@ -132,7 +128,6 @@ public class CacheProxyUtils {
                 }
             }
         }
-        System.out.println("result: " + result);
         return result;
     }
 }

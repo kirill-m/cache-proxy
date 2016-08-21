@@ -2,6 +2,8 @@ package ru.sbt.cache_proxy.loader;
 
 /**
  * Created by kirill on 19.08.16
+ *
+ * The class simulates slow operation.
  */
 public class LoaderImpl implements Loader {
     @Override

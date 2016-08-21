@@ -13,7 +13,7 @@ import java.util.Date;
  */
 public class Test {
     public static void main(String[] args) {
-        CacheProxy proxy = new CacheProxy("/Users/kirill/Desktop/dz9/", new Date());
+        CacheProxy proxy = new CacheProxy("/Users/kirill/Desktop/dz9/");
         Service service = proxy.cache(new ServiceImpl());
         service.work("lol");
 

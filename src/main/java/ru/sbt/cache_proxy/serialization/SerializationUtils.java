@@ -51,7 +51,6 @@ public class SerializationUtils {
              ZipOutputStream zos = new ZipOutputStream(fos);
              FileInputStream fis = new FileInputStream(new File(file))) {
             String fileName = file.substring(file.lastIndexOf(System.getProperty("file.separator")) + 1);
-            System.out.println(fileName);
             ZipEntry e = new ZipEntry(fileName);
             zos.putNextEntry(e);
 
