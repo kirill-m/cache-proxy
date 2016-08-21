@@ -15,15 +15,6 @@ import static java.util.Arrays.asList;
 
 public class SerializationUtils {
 
-
-//    public static void serialize(Serializable o) throws IOException {
-//        serialize(o, FILE);
-//    }
-
-//    public static <T> T deserialize(String file) throws IOException, ClassNotFoundException {
-//        return deserialize(file);
-//    }
-
     public static byte[] serializeToByte(Serializable o) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (ObjectOutputStream stream = new ObjectOutputStream(
@@ -73,10 +64,6 @@ public class SerializationUtils {
         } catch (IOException e) {
             throw new RuntimeException("Exception happened on autoclosable resource ZipOutputStream out", e);
         }
-    }
-
-    public void deleteFile(String file) {
-
     }
 
     public static Object key(Method method, Object[] args) {
