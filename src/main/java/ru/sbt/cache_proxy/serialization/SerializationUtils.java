@@ -5,8 +5,13 @@ package ru.sbt.cache_proxy.serialization;
  */
 
 import java.io.*;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import static java.util.Arrays.asList;
 
 public class SerializationUtils {
 
@@ -72,5 +77,13 @@ public class SerializationUtils {
 
     public void deleteFile(String file) {
 
+    }
+
+    public static Object key(Method method, Object[] args) {
+        List<Object> key = new ArrayList<>();
+        key.add(method);
+        key.addAll(asList(args));
+
+        return key;
     }
 }
